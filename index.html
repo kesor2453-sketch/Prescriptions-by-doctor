@@ -107,7 +107,7 @@
 
 <script>
 // ▼ Paste your Apps Script web app /exec URL here
-const API = 'PASTE_APPS_SCRIPT_EXEC_URL_HERE';
+const API = 'https://script.google.com/macros/s/AKfycbwzlLRNk352Jxd9UTvvktk-7zjtzGxLDPE-nnEpyEeHQgwBzMwU1nTwHVU2bDLbxgHDMA/exec';
 
 const KH_MONTHS = ['មករា','កុម្ភៈ','មីនា','មេសា','ឧសភា','មិថុនា','កក្កដា','សីហា','កញ្ញា','តុលា','វិច្ឆិកា','ធ្នូ'];
 const KH_DAYS = ['អាទិត្យ','ច័ន្ទ','អង្គារ','ពុធ','ព្រហស្បតិ៍','សុក្រ','សៅរ៍'];
@@ -132,7 +132,17 @@ async function load() {
     if (API.startsWith('PASTE')) throw new Error('មិនទាន់ដាក់ URL របស់ Apps Script នៅក្នុង index.html ទេ');
     const res = await fetch(API + (API.includes('?') ? '&' : '?') + 't=' + Date.now());
     const data = await res.json();
-    ROWS = (data.rows || []).filter(r => r.date && r.doctor).map(r => ({ ...r, date: String(r.date).slice(0, 10) }));
+    const raw = (data.rows || []).filter(r => r.date && r.doctor);
+    // Same doctor typed differently in the EMR ("Dr. KHIEV PANHA VATH" / "Dr. KHIEV PANHAVATH", "phalla dalin") -> one name
+    const keyOf = (n) => String(n).toUpperCase().replace(/^\s*DR\.?\s*/, '').replace(/[^A-Zក-៿]/g, '');
+    const variants = {};
+    raw.forEach(r => { const k = keyOf(r.doctor); (variants[k] = variants[k] || {})[r.doctor] = (variants[k][r.doctor] || 0) + 1; });
+    const display = {};
+    for (const [k, v] of Object.entries(variants)) {
+      const best = Object.entries(v).sort((a, b) => b[1] - a[1])[0][0].trim();
+      display[k] = /^dr\.?\s/i.test(best) ? 'Dr. ' + best.replace(/^dr\.?\s*/i, '').toUpperCase() : 'Dr. ' + best.toUpperCase();
+    }
+    ROWS = raw.map(r => ({ ...r, doctor: display[keyOf(r.doctor)], date: String(r.date).slice(0, 10) }));
     DOCS = [...new Set(ROWS.map(r => r.doctor))].sort();
     COLORS = Object.fromEntries(DOCS.map((d, i) => [d, css.getPropertyValue(colorVars[i % colorVars.length]).trim()]));
     const months = [...new Set(ROWS.map(r => r.date.slice(0, 7)))].sort().reverse();
