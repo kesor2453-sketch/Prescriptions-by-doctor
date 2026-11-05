@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="km">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ចំនួន Prescription តាមគ្រូពេទ្យ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f6f8; --panel: #ffffff; --fg: #17212b; --muted: #66727e; --line: #e2e7ec;
+    --accent: #0f766e; --accent-soft: #e6f4f2;
+    --c1: #0f766e; --c2: #2563eb; --c3: #d97706; --c4: #be185d; --c5: #7c3aed; --c6: #0891b2; --c7: #65a30d; --c8: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1418; --panel: #182026; --fg: #e8edf1; --muted: #94a1ad; --line: #2a343c; --accent: #2dd4bf; --accent-soft: #123a36;
+      --c1: #2dd4bf; --c2: #60a5fa; --c3: #fbbf24; --c4: #f472b6; --c5: #a78bfa; --c6: #22d3ee; --c7: #a3e635; --c8: #f87171; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: 'Kantumruy Pro', system-ui, sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; margin-bottom: 18px; }
+  h1 { font-size: 1.45rem; margin: 0; font-weight: 700; }
+  .sub { color: var(--muted); margin: 4px 0 0; font-size: .92rem; }
+  .sub b { color: var(--fg); font-weight: 600; }
+  .controls { display: flex; gap: 8px; align-items: center; }
+  select, button { font: inherit; font-size: .92rem; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; min-width: 0; }
+  .tile .k { color: var(--muted); font-size: .82rem; }
+  .tile .v { font-size: 1.9rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; margin-bottom: 14px; }
+  h2 { font-size: 1.02rem; margin: 0 0 2px; font-weight: 600; }
+  .note { color: var(--muted); font-size: .8rem; margin: 0 0 12px; }
+  .bars .row { display: grid; grid-template-columns: minmax(110px, 38%) 1fr auto; gap: 10px; align-items: center; margin: 9px 0; font-size: .9rem; }
+  .bars .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bars .track { height: 22px; background: var(--accent-soft); border-radius: 6px; overflow: hidden; }
+  .bars .fill { height: 100%; border-radius: 6px; }
+  .bars .n { font-weight: 600; font-variant-numeric: tabular-nums; min-width: 2.5em; text-align: right; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .78rem; color: var(--muted); margin-bottom: 8px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .chart { position: relative; }
+  .chart svg { display: block; width: 100%; height: auto; }
+  .chart text { fill: var(--muted); font-size: 11px; font-family: inherit; }
+  .tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.12); padding: 8px 10px; font-size: .8rem; white-space: nowrap; display: none; z-index: 3; }
+  .tip .d { color: var(--muted); margin-bottom: 3px; }
+  .tablebox { overflow: auto; max-height: 520px; }
+  table { border-collapse: collapse; width: 100%; font-size: .86rem; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: var(--panel); }
+  thead th { position: sticky; top: 0; background: var(--panel); color: var(--muted); font-weight: 600; z-index: 1; }
+  thead th:first-child { z-index: 2; }
+  tfoot td { font-weight: 700; border-top: 2px solid var(--line); position: sticky; bottom: 0; background: var(--panel); }
+  td.zero { color: var(--muted); opacity: .5; }
+  .status { color: var(--muted); font-size: .85rem; padding: 30px 0; text-align: center; }
+  .err { color: var(--c8); }
+  footer { color: var(--muted); font-size: .78rem; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>ចំនួន Prescription តាមគ្រូពេទ្យ</h1>
+      <p class="sub" id="takeaway">កំពុងទាញទិន្នន័យ…</p>
+    </div>
+    <div class="controls">
+      <select id="month" aria-label="ខែ"></select>
+      <button id="reload" type="button">↻ ផ្ទុកឡើងវិញ</button>
+    </div>
+  </header>
+
+  <div id="status" class="status">កំពុងទាញទិន្នន័យ…</div>
+
+  <div id="content" hidden>
+    <div class="tiles">
+      <div class="card tile"><div class="k">Prescription សរុបក្នុងខែ</div><div class="v" id="t-total">—</div></div>
+      <div class="card tile"><div class="k">ចំនួនថ្ងៃ</div><div class="v" id="t-days">—</div></div>
+      <div class="card tile"><div class="k">គ្រូពេទ្យ</div><div class="v" id="t-docs">—</div></div>
+      <div class="card tile"><div class="k">មធ្យមក្នុងមួយថ្ងៃ</div><div class="v" id="t-avg">—</div></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>សរុបប្រចាំខែតាមគ្រូពេទ្យ</h2>
+        <p class="note">ចំនួន prescription ដែលគ្រូពេទ្យម្នាក់ៗចេញក្នុងខែដែលបានជ្រើស</p>
+        <div class="bars" id="bars"></div>
+      </div>
+      <div class="card">
+        <h2>ប្រចាំថ្ងៃ</h2>
+        <p class="note">ជួរឈរនីមួយៗជាមួយថ្ងៃ បែងចែកតាមគ្រូពេទ្យ (ដាក់ mouse លើដើម្បីមើលលម្អិត)</p>
+        <div class="legend" id="legend"></div>
+        <div class="chart" id="chart"><div class="tip" id="tip"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>តារាងប្រចាំថ្ងៃ តាមគ្រូពេទ្យ</h2>
+      <p class="note">ជួរខាងក្រោមបង្អស់ជាសរុបប្រចាំខែ</p>
+      <div class="tablebox"><table id="table"></table></div>
+    </div>
+    <footer id="foot"></footer>
+  </div>
+</div>
+
+<script>
+// ▼ Paste your Apps Script web app /exec URL here
+const API = 'PASTE_APPS_SCRIPT_EXEC_URL_HERE';
+
+const KH_MONTHS = ['មករា','កុម្ភៈ','មីនា','មេសា','ឧសភា','មិថុនា','កក្កដា','សីហា','កញ្ញា','តុលា','វិច្ឆិកា','ធ្នូ'];
+const KH_DAYS = ['អាទិត្យ','ច័ន្ទ','អង្គារ','ពុធ','ព្រហស្បតិ៍','សុក្រ','សៅរ៍'];
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => Number(n).toLocaleString('en-US');
+const monthLabel = (m) => { const [y, mo] = m.split('-'); return KH_MONTHS[+mo - 1] + ' ' + y; };
+const dayLabel = (d) => { const dt = new Date(d + 'T00:00:00'); return KH_DAYS[dt.getDay()] + ' ' + dt.getDate() + '/' + (dt.getMonth() + 1); };
+const colorVars = ['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8'];
+const css = getComputedStyle(document.documentElement);
+let ROWS = [], DOCS = [], COLORS = {};
+
+function el(tag, attrs = {}, text) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+async function load() {
+  $('status').hidden = false; $('status').className = 'status'; $('status').textContent = 'កំពុងទាញទិន្នន័យ…';
+  try {
+    if (API.startsWith('PASTE')) throw new Error('មិនទាន់ដាក់ URL របស់ Apps Script នៅក្នុង index.html ទេ');
+    const res = await fetch(API + (API.includes('?') ? '&' : '?') + 't=' + Date.now());
+    const data = await res.json();
+    ROWS = (data.rows || []).filter(r => r.date && r.doctor).map(r => ({ ...r, date: String(r.date).slice(0, 10) }));
+    DOCS = [...new Set(ROWS.map(r => r.doctor))].sort();
+    COLORS = Object.fromEntries(DOCS.map((d, i) => [d, css.getPropertyValue(colorVars[i % colorVars.length]).trim()]));
+    const months = [...new Set(ROWS.map(r => r.date.slice(0, 7)))].sort().reverse();
+    const sel = $('month'); const keep = sel.value;
+    sel.replaceChildren(...months.map(m => { const o = el('option', { value: m }, monthLabel(m)); return o; }));
+    if (keep && months.includes(keep)) sel.value = keep;
+    if (!months.length) throw new Error('មិនទាន់មានទិន្នន័យ');
+    $('status').hidden = true; $('content').hidden = false;
+    $('foot').textContent = 'ទិន្នន័យចុងក្រោយ៖ ' + ROWS.map(r => r.date + ' ' + r.time).sort().pop() + ' · ទាញនៅ ' + new Date().toLocaleString('en-GB');
+    render();
+  } catch (e) {
+    $('content').hidden = true; $('status').className = 'status err'; $('status').textContent = 'ទាញទិន្នន័យមិនបាន៖ ' + e.message;
+    $('takeaway').textContent = '';
+  }
+}
+
+function render() {
+  const m = $('month').value;
+  const rows = ROWS.filter(r => r.date.startsWith(m));
+  const days = [...new Set(rows.map(r => r.date))].sort();
+  const byDoc = DOCS.map(d => ({ d, n: rows.filter(r => r.doctor === d).length })).filter(x => x.n).sort((a, b) => b.n - a.n);
+  const docs = byDoc.map(x => x.d);
+
+  $('t-total').textContent = fmt(rows.length);
+  $('t-days').textContent = fmt(days.length);
+  $('t-docs').textContent = fmt(docs.length);
+  $('t-avg').textContent = days.length ? fmt(Math.round(rows.length / days.length)) : '—';
+
+  const tk = $('takeaway'); tk.replaceChildren();
+  if (byDoc.length) {
+    tk.append('ខែ ', el('b', {}, monthLabel(m)), ' — ', el('b', {}, byDoc[0].d), ' ចេញច្រើនជាងគេ ', el('b', {}, fmt(byDoc[0].n)), ' ក្នុងចំណោម ', el('b', {}, fmt(rows.length)), ' prescription');
+  }
+
+  // bars
+  const max = byDoc[0]?.n || 1;
+  $('bars').replaceChildren(...byDoc.map(x => {
+    const row = el('div', { class: 'row' });
+    const fill = el('div', { class: 'fill' }); fill.style.width = (x.n / max * 100) + '%'; fill.style.background = COLORS[x.d];
+    const track = el('div', { class: 'track' }); track.appendChild(fill);
+    row.append(el('span', { class: 'name', title: x.d }, x.d), track, el('span', { class: 'n' }, fmt(x.n)));
+    return row;
+  }));
+
+  // legend
+  $('legend').replaceChildren(...docs.map(d => { const s = el('span'); const i = el('i'); i.style.background = COLORS[d]; s.append(i, d); return s; }));
+
+  // stacked chart
+  drawChart(days, docs, rows);
+
+  // table
+  const t = $('table'); t.replaceChildren();
+  const thead = t.createTHead(); const hr = thead.insertRow();
+  [ 'ថ្ងៃ', ...docs, 'សរុប' ].forEach(h => hr.appendChild(el('th', {}, h)));
+  const tb = t.createTBody();
+  days.forEach(day => {
+    const tr = tb.insertRow(); tr.insertCell().textContent = dayLabel(day);
+    const dr = rows.filter(r => r.date === day);
+    docs.forEach(d => { const n = dr.filter(r => r.doctor === d).length; const c = tr.insertCell(); c.textContent = fmt(n); if (!n) c.className = 'zero'; });
+    tr.insertCell().textContent = fmt(dr.length);
+  });
+  const tf = t.createTFoot().insertRow();
+  tf.insertCell().textContent = 'សរុបខែ';
+  byDoc.forEach(x => tf.insertCell().textContent = fmt(x.n));
+  tf.insertCell().textContent = fmt(rows.length);
+}
+
+function drawChart(days, docs, rows) {
+  const box = $('chart'); const tip = $('tip');
+  box.querySelector('svg')?.remove();
+  const W = Math.max(300, box.clientWidth || 420), H = 240, ml = 34, mb = 22, mt = 8, mr = 4;
+  const totals = days.map(day => rows.filter(r => r.date === day).length);
+  const ymax = Math.max(1, ...totals);
+  const step = Math.pow(10, Math.floor(Math.log10(ymax))) * (ymax / Math.pow(10, Math.floor(Math.log10(ymax))) > 5 ? 2 : 1);
+  const top = Math.ceil(ymax / step) * step;
+  const y = v => H - mb - (v / top) * (H - mb - mt);
+  const bw = (W - ml - mr) / Math.max(1, days.length);
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const add = (tag, a, txt) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; svg.appendChild(e); return e; };
+  for (let v = 0; v <= top; v += step) {
+    add('line', { x1: ml, x2: W - mr, y1: y(v), y2: y(v), stroke: css.getPropertyValue('--line') });
+    add('text', { x: ml - 6, y: y(v), 'text-anchor': 'end', 'dominant-baseline': 'middle' }, fmt(v));
+  }
+  const every = Math.ceil(days.length / Math.max(1, Math.floor((W - ml) / 30)));
+  days.forEach((day, i) => {
+    const x = ml + i * bw, w = Math.max(2, bw * 0.72), x0 = x + (bw - w) / 2;
+    let acc = 0;
+    const dr = rows.filter(r => r.date === day);
+    docs.forEach(d => {
+      const n = dr.filter(r => r.doctor === d).length; if (!n) return;
+      add('rect', { x: x0, width: w, y: y(acc + n), height: y(acc) - y(acc + n), fill: COLORS[d] });
+      acc += n;
+    });
+    if (i % every === 0) add('text', { x: x + bw / 2, y: H - 6, 'text-anchor': 'middle' }, String(new Date(day + 'T00:00:00').getDate()));
+    const hit = add('rect', { x, width: bw, y: mt, height: H - mb - mt, fill: 'transparent' });
+    hit.addEventListener('mousemove', (ev) => {
+      tip.replaceChildren(el('div', { class: 'd' }, dayLabel(day) + ' · ' + fmt(dr.length)));
+      docs.forEach(d => { const n = dr.filter(r => r.doctor === d).length; if (!n) return; const l = el('div'); const s = el('i'); s.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;background:${COLORS[d]}`; l.append(s, `${d}: ${fmt(n)}`); tip.appendChild(l); });
+      tip.style.display = 'block';
+      const r = box.getBoundingClientRect();
+      tip.style.left = Math.min(Math.max(0, ev.clientX - r.left + 12), box.clientWidth - tip.offsetWidth) + 'px';
+      tip.style.top = Math.max(0, ev.clientY - r.top - 10) + 'px';
+    });
+    hit.addEventListener('mouseleave', () => tip.style.display = 'none');
+  });
+  box.appendChild(svg);
+}
+
+$('month').addEventListener('change', render);
+$('reload').addEventListener('click', load);
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => ROWS.length && render(), 150); });
+load();
+</script>
+</body>
+</html>
